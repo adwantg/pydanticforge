@@ -1,0 +1,99 @@
+# Author: Goutam Adwant
+[build-system]
+requires = ["hatchling>=1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pydanticforge"
+version = "0.1.0"
+description = "Infer robust Pydantic v2 models from messy, evolving JSON streams"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Goutam Adwant",email = "workwithgoutam@gmail.com" }]
+keywords = [
+    "json",
+    "schema-inference",
+    "pydantic",
+    "pydantic-v2",
+    "code-generation",
+    "ndjson",
+    "schema-drift",
+    "type-inference",
+    "developer-tools",
+    "cli",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Code Generators",
+]
+dependencies = [
+    "pydantic>=2.12.0",
+    "orjson>=3.10.0",
+    "typer>=0.16.0",
+    "rich>=13.9.0",
+    "watchfiles>=1.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "build>=1.2.0",
+    "twine>=6.0.0",
+    "pre-commit>=4.0.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "hypothesis>=6.119.0",
+    "pip-audit>=2.8.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/adwantg/pydanticforge"
+Repository = "https://github.com/adwantg/pydanticforge"
+Issues = "https://github.com/adwantg/pydanticforge/issues"
+
+[project.scripts]
+pydanticforge = "pydanticforge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pydanticforge"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "C4", "RUF"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+warn_unused_configs = true
+mypy_path = ["src"]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers --strict-config --cov=pydanticforge --cov-report=term-missing"
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["pydanticforge"]
+
+[tool.coverage.report]
+fail_under = 75
+show_missing = true
+skip_covered = true

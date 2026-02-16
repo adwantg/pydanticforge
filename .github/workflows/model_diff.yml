@@ -1,0 +1,30 @@
+# Author: gadwant
+name: Model Diff (pydanticforge)
+
+on:
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  diff:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pydanticforge
+          pip install -e .
+
+      - name: Diff model versions
+        run: |
+          # Example:
+          # pydanticforge diff models_v1.py models_v2.py --format json --fail-on-breaking
+          echo "Add your model diff command here"

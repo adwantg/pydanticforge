@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "gadwant"
+    given-names: "gadwant"
+    alias: "gadwant"
+title: "pydanticforge: Infer robust Pydantic v2 models from messy, evolving JSON streams"
+version: "0.1.0"
+date-released: "2026-02-15"
+url: "https://github.com/adwantg/pydanticforge"
+repository-code: "https://github.com/adwantg/pydanticforge"
+license: MIT
+keywords:
+  - pydantic
+  - json
+  - schema-inference
+  - code-generation
+  - schema-drift
+  - developer-tools
