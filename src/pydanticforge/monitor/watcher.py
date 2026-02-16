@@ -55,8 +55,9 @@ def monitor_directory_once(
                 expected_root = observed
                 continue
 
-            file_events.extend(detect_drift(expected_root, observed, path="$"))
-            if autopatch and file_events:
+            sample_events = detect_drift(expected_root, observed, path="$")
+            file_events.extend(sample_events)
+            if autopatch and sample_events:
                 expected_root = join_types(
                     expected_root,
                     observed,

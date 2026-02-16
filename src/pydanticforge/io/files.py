@@ -10,6 +10,8 @@ from typing import Any
 
 orjson: Any | None = importlib.import_module("orjson") if find_spec("orjson") is not None else None
 
+_JSON_FILE_SUFFIXES = (".json", ".ndjson", ".jsonl")
+
 
 def _loads(raw: bytes | str) -> Any:
     if orjson is not None:
@@ -21,10 +23,39 @@ def _loads(raw: bytes | str) -> Any:
     return json.loads(raw)
 
 
+def _parse_ndjson(raw: bytes) -> list[Any]:
+    text = raw.decode("utf-8")
+    samples: list[Any] = []
+
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped:
+            continue
+        samples.append(_loads(stripped))
+
+    return samples
+
+
 def read_json_file(path: Path) -> Any:
-    return _loads(path.read_bytes())
+    raw = path.read_bytes()
+    try:
+        return _loads(raw)
+    except ValueError as primary_error:
+        try:
+            ndjson_samples = _parse_ndjson(raw)
+        except (UnicodeDecodeError, ValueError):
+            raise primary_error from None
+
+        if not ndjson_samples:
+            raise primary_error from None
+
+        return ndjson_samples
 
 
 def iter_json_files(directory: Path, *, recursive: bool = True) -> Iterable[Path]:
-    pattern = "**/*.json" if recursive else "*.json"
-    yield from sorted(p for p in directory.glob(pattern) if p.is_file())
+    files: set[Path] = set()
+    for suffix in _JSON_FILE_SUFFIXES:
+        pattern = f"**/*{suffix}" if recursive else f"*{suffix}"
+        files.update(path for path in directory.glob(pattern) if path.is_file())
+
+    yield from sorted(files)

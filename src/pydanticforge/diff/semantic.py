@@ -68,17 +68,41 @@ def _classify_type_change(old: str, new: str) -> str:
     return "changed"
 
 
-def _is_basemodel_subclass(class_node: ast.ClassDef) -> bool:
+def _base_name(base: ast.expr) -> str | None:
+    if isinstance(base, ast.Name):
+        return base.id
+    if isinstance(base, ast.Attribute):
+        return base.attr
+    if isinstance(base, ast.Subscript):
+        return _base_name(base.value)
+    return None
+
+
+def _has_model_base(class_node: ast.ClassDef, base_name: str) -> bool:
+    return any(_base_name(base) == base_name for base in class_node.bases)
+
+
+def _is_pydantic_model_subclass(class_node: ast.ClassDef) -> bool:
+    return _has_model_base(class_node, "BaseModel") or _has_model_base(class_node, "RootModel")
+
+
+def _extract_root_model_annotation(class_node: ast.ClassDef) -> str | None:
     for base in class_node.bases:
-        if isinstance(base, ast.Name) and base.id == "BaseModel":
-            return True
-        if isinstance(base, ast.Attribute) and base.attr == "BaseModel":
-            return True
-    return False
+        if _base_name(base) != "RootModel":
+            continue
+
+        if isinstance(base, ast.Subscript):
+            return _normalize_annotation(ast.unparse(base.slice))
+        return "Any"
+
+    return None
 
 
 def _is_field_required(statement: ast.AnnAssign) -> bool:
     if statement.value is None:
+        return True
+
+    if isinstance(statement.value, ast.Constant) and statement.value.value is ...:
         return True
 
     if isinstance(statement.value, ast.Call):
@@ -98,10 +122,15 @@ def parse_pydantic_models(path: Path) -> ModelSchema:
     for node in tree.body:
         if not isinstance(node, ast.ClassDef):
             continue
-        if not _is_basemodel_subclass(node):
+        if not _is_pydantic_model_subclass(node):
             continue
 
         fields: dict[str, ModelField] = {}
+
+        root_annotation = _extract_root_model_annotation(node)
+        if root_annotation is not None:
+            fields["__root__"] = ModelField(annotation=root_annotation, required=True)
+
         for statement in node.body:
             if not isinstance(statement, ast.AnnAssign):
                 continue

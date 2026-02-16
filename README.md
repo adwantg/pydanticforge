@@ -257,7 +257,7 @@ pydanticforge generate [OPTIONS]
 
 | Option | Description |
 |--------|-------------|
-| `--input` | JSON file or directory (repeat for multiple). Reads all `.json` files (recursive if directory). |
+| `--input` | JSON file or directory (repeat for multiple). Directory scans include `.json`, `.ndjson`, and `.jsonl` files (recursive). |
 | `--from-state` | Use this state file instead of inferring from input. |
 | `--from-json-schema` | Use this JSON Schema file as input. |
 | `--output` | Output path for generated `models.py`. If omitted, prints to stdout. |
@@ -279,6 +279,7 @@ From a single file or directory:
 
 ```bash
 pydanticforge generate --input ./samples/data.json --output models.py
+pydanticforge generate --input ./samples/events.ndjson --output models.py
 pydanticforge generate --input ./samples/ --output models.py
 ```
 
@@ -298,7 +299,7 @@ pydanticforge generate --from-json-schema schema.json --output models.py
 
 ### `monitor` — Scan directory for schema drift
 
-Scans a directory for `.json` files, infers type from each file’s content, and compares to the expected schema from the state file. Reports drift (type mismatches, missing required fields, new fields). Optionally updates state and regenerates models (autopatch).
+Scans a directory for `.json`, `.ndjson`, and `.jsonl` files, infers type from each file’s content, and compares to the expected schema from the state file. Reports drift (type mismatches, missing required fields, new fields). Optionally updates state and regenerates models (autopatch).
 
 ```bash
 pydanticforge monitor <directory> [OPTIONS]
@@ -348,7 +349,7 @@ Monitor exit codes:
 
 ### `diff` — Semantic diff between two model files
 
-Parses two Python files containing Pydantic `BaseModel` classes and prints a semantic diff (added/removed classes and fields, required/optional and type changes), classified as breaking or non-breaking.
+Parses two Python files containing Pydantic `BaseModel` or `RootModel` classes and prints a semantic diff (added/removed classes and fields, required/optional and type changes), classified as breaking or non-breaking.
 
 ```bash
 pydanticforge diff <old_model.py> <new_model.py> [OPTIONS]
@@ -612,7 +613,7 @@ Use the same `strict_numbers` when calling `join_types` (e.g. in monitor autopat
 ## Input and output formats
 
 - **Stdin (watch / generate):** Newline-delimited JSON (NDJSON). Each line is one JSON value (object or array). If a line is an array, each element is treated as a separate sample.
-- **Files:** `.json` files. Content can be a single JSON value (object or array) or NDJSON; arrays are expanded into one sample per element.
+- **Files:** `.json`, `.ndjson`, and `.jsonl` files. Content can be a single JSON value (object or array) or NDJSON; arrays are expanded into one sample per element.
 - **State file:** JSON file with `schema_version` and `root` (internal type graph). Do not edit by hand; use CLI or `save_schema_state` / `load_schema_state`.
 - **JSON Schema:** Draft 2020-12 document import/export for state interop (`schema`, `generate`, `watch`, `monitor`).
 - **Monitor JSON report:** `monitor --format json` emits machine-readable summary + per-file/per-event severities.
@@ -645,7 +646,7 @@ Quality checks:
 ruff check .
 ruff format --check .
 mypy src
-pytest -q
+python -m pytest -q
 pip-audit
 ```
 

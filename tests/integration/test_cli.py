@@ -255,3 +255,59 @@ def test_monitor_breaking_exit_code(tmp_path: Path, capsys: object) -> None:
     assert exit_code == 21
     payload = json.loads(captured.out)
     assert payload["summary"]["breaking_events"] >= 1
+
+
+def test_generate_command_from_ndjson_file(tmp_path: Path) -> None:
+    input_file = tmp_path / "samples.ndjson"
+    input_file.write_text('{"id": 1}\n{"id": 2, "name": "alice"}\n', encoding="utf-8")
+
+    output = tmp_path / "models.py"
+    exit_code = main(["generate", "--input", str(input_file), "--output", str(output)])
+
+    assert exit_code == 0
+    text = output.read_text(encoding="utf-8")
+    assert "class PydanticforgeModel(BaseModel):" in text
+    assert "name: str | None = None" in text
+
+
+def test_monitor_and_status_support_ndjson_files(tmp_path: Path, capsys: object) -> None:
+    state_file = tmp_path / "state.json"
+    _run_with_stdin(
+        ["generate", "--save-state", str(state_file)],
+        '{"id": 1, "name": "baseline"}\n',
+    )
+    capsys.readouterr()
+
+    logs_dir = tmp_path / "logs"
+    logs_dir.mkdir()
+    (logs_dir / "events.ndjson").write_text(
+        '{"id": 2, "name": "ok"}\n{"id": "bad", "name": "oops"}\n',
+        encoding="utf-8",
+    )
+
+    monitor_exit = main(
+        [
+            "monitor",
+            str(logs_dir),
+            "--state",
+            str(state_file),
+            "--format",
+            "json",
+            "--fail-on",
+            "breaking",
+        ]
+    )
+    monitor_output = capsys.readouterr()
+
+    assert monitor_exit == 21
+    monitor_payload = json.loads(monitor_output.out)
+    assert monitor_payload["summary"]["files_scanned"] == 1
+    assert monitor_payload["summary"]["breaking_events"] >= 1
+
+    status_exit = main(["status", str(logs_dir), "--state", str(state_file), "--format", "json"])
+    status_output = capsys.readouterr()
+
+    assert status_exit == 0
+    status_payload = json.loads(status_output.out)
+    assert status_payload["drift"]["summary"]["files_scanned"] == 1
+    assert status_payload["drift"]["summary"]["breaking_events"] >= 1

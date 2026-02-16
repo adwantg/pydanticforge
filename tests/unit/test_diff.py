@@ -55,3 +55,41 @@ def test_semantic_diff_classifies_breaking_and_non_breaking(tmp_path: Path) -> N
         and "optional" in entry.message
         for entry in entries
     )
+
+
+def test_semantic_diff_detects_root_model_type_change(tmp_path: Path) -> None:
+    old_file = tmp_path / "old_root.py"
+    new_file = tmp_path / "new_root.py"
+
+    old_file.write_text(
+        "\n".join(
+            [
+                "from pydantic import RootModel",
+                "",
+                "class Payload(RootModel[int]):",
+                "    pass",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    new_file.write_text(
+        "\n".join(
+            [
+                "from pydantic import RootModel",
+                "",
+                "class Payload(RootModel[str]):",
+                "    pass",
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    entries = diff_models(old_file, new_file)
+
+    assert any(
+        entry.field_name == "__root__"
+        and entry.severity == "breaking"
+        and "Type changed" in entry.message
+        for entry in entries
+    )
