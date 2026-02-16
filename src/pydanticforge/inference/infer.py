@@ -1,8 +1,9 @@
 # Author: gadwant
 from __future__ import annotations
 
+from collections.abc import Iterable
 from datetime import datetime
-from typing import Any, Iterable
+from typing import Any
 
 from pydanticforge.inference.lattice import join_types
 from pydanticforge.inference.types import (

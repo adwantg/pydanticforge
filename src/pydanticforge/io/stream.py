@@ -1,13 +1,13 @@
 # Author: gadwant
 from __future__ import annotations
 
+import importlib
 import json
-from typing import Any, Iterable, TextIO
+from collections.abc import Iterable
+from importlib.util import find_spec
+from typing import Any, TextIO
 
-try:
-    import orjson
-except ImportError:  # pragma: no cover - optional dependency at runtime
-    orjson = None
+orjson: Any | None = importlib.import_module("orjson") if find_spec("orjson") is not None else None
 
 
 def _loads(raw: str) -> Any:
@@ -24,7 +24,6 @@ def iter_json_from_stream(stream: TextIO) -> Iterable[Any]:
 
         item = _loads(stripped)
         if isinstance(item, list):
-            for value in item:
-                yield value
+            yield from item
         else:
             yield item

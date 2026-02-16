@@ -1,9 +1,9 @@
 # Author: gadwant
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 from pydanticforge.inference.infer import infer_type
 from pydanticforge.inference.lattice import join_types
@@ -27,8 +27,7 @@ class MonitorReport:
 
 def _iter_samples(payload: object) -> Iterable[object]:
     if isinstance(payload, list):
-        for item in payload:
-            yield item
+        yield from payload
     else:
         yield payload
 

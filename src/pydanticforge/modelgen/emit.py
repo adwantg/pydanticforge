@@ -4,10 +4,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from pydanticforge.inference.types import (
-    ANY,
-    NULL,
-    ArrayType,
     AnyType,
+    ArrayType,
     BoolType,
     DateTimeType,
     FieldInfo,
@@ -139,8 +137,8 @@ def generate_models(root: TypeNode, *, root_name: str = "PydanticforgeModel") ->
     if isinstance(root, ObjectType):
         registry.ensure_model(root, root_name)
         blocks = [_render_class(defn, registry) for defn in registry.definitions]
-        return "\n".join(imports + ["\n\n".join(blocks), ""])
+        return "\n".join([*imports, "\n\n".join(blocks), ""])
 
     root_annotation = _annotation(root, registry, root_name)
     block = f"class {to_class_name(root_name)}(RootModel[{root_annotation}]):\n    pass"
-    return "\n".join(imports + [block, ""])
+    return "\n".join([*imports, block, ""])

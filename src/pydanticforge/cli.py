@@ -4,8 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from collections.abc import Callable, Iterable
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, cast
 
 from pydanticforge.diff.semantic import DiffEntry, diff_models, format_diff
 from pydanticforge.inference.infer import TypeInferer
@@ -38,8 +39,7 @@ EXIT_MONITOR_BREAKING = 21
 
 def _iter_samples(payload: object) -> Iterable[object]:
     if isinstance(payload, list):
-        for item in payload:
-            yield item
+        yield from payload
     else:
         yield payload
 
@@ -48,10 +48,7 @@ def _infer_from_paths(paths: list[Path], *, strict_numbers: bool = False) -> Typ
     inferer = TypeInferer(strict_numbers=strict_numbers)
 
     for path in paths:
-        if path.is_dir():
-            files = iter_json_files(path, recursive=True)
-        else:
-            files = [path]
+        files = iter_json_files(path, recursive=True) if path.is_dir() else [path]
 
         for file_path in files:
             payload = read_json_file(file_path)
@@ -148,11 +145,11 @@ def _monitor_payload_text(payload: dict[str, Any]) -> str:
         return "\n".join(lines)
 
     lines.append(
-        f"Detected {summary['total_events']} drift event(s) in {summary['files_with_drift']} file(s)."
+        "Detected "
+        f"{summary['total_events']} drift event(s) in "
+        f"{summary['files_with_drift']} file(s)."
     )
-    lines.append(
-        f"Breaking: {summary['breaking_events']} | Warning: {summary['warning_events']}"
-    )
+    lines.append(f"Breaking: {summary['breaking_events']} | Warning: {summary['warning_events']}")
 
     for file_payload in payload["files"]:
         lines.append(f"- {file_payload['path']}")
@@ -271,13 +268,25 @@ def _status_text(payload: dict[str, Any]) -> str:
     ]
 
     counts = payload["schema"]["counts"]
+    scalar_count = (
+        counts["bool"]
+        + counts["int"]
+        + counts["float"]
+        + counts["str"]
+        + counts["datetime"]
+        + counts["null"]
+        + counts["any"]
+    )
     lines.append(
         "Type counts: "
         f"object={counts['object']}, array={counts['array']}, union={counts['union']}, "
-        f"scalars={counts['bool'] + counts['int'] + counts['float'] + counts['str'] + counts['datetime'] + counts['null'] + counts['any']}"
+        f"scalars={scalar_count}"
     )
     lines.append(
-        f"Fields: total={counts['field_total']}, required={counts['field_required']}, optional={counts['field_optional']}"
+        "Fields: "
+        f"total={counts['field_total']}, "
+        f"required={counts['field_required']}, "
+        f"optional={counts['field_optional']}"
     )
 
     drift_payload = payload.get("drift")
@@ -285,8 +294,11 @@ def _status_text(payload: dict[str, Any]) -> str:
         summary = drift_payload["summary"]
         lines.append("Drift snapshot:")
         lines.append(
-            f"  scanned={summary['files_scanned']}, files_with_drift={summary['files_with_drift']}, "
-            f"events={summary['total_events']} (breaking={summary['breaking_events']}, warning={summary['warning_events']})"
+            "  scanned="
+            f"{summary['files_scanned']}, "
+            f"files_with_drift={summary['files_with_drift']}, "
+            f"events={summary['total_events']} "
+            f"(breaking={summary['breaking_events']}, warning={summary['warning_events']})"
         )
 
     return "\n".join(lines)
@@ -298,10 +310,8 @@ def _cmd_watch(args: argparse.Namespace) -> int:
 
     inferer = TypeInferer(strict_numbers=args.strict_numbers)
 
-    sample_count = 0
-    for payload in iter_json_from_stream(sys.stdin):
+    for sample_count, payload in enumerate(iter_json_from_stream(sys.stdin), start=1):
         inferer.observe(payload)
-        sample_count += 1
 
         if args.every and sample_count % args.every == 0 and inferer.root is not None:
             code = generate_models(inferer.root, root_name=args.root_name)
@@ -473,7 +483,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     watch = subparsers.add_parser("watch", help="Infer schema incrementally from a JSON stream.")
     watch.add_argument("--input", default="stdin", help="Input source; only 'stdin' is supported.")
-    watch.add_argument("--output", type=Path, default=None, help="Write generated models to this file.")
+    watch.add_argument(
+        "--output",
+        type=Path,
+        default=None,
+        help="Write generated models to this file.",
+    )
     watch.add_argument("--state", type=Path, default=Path(".pydanticforge/state.json"))
     watch.add_argument("--root-name", default="PydanticforgeModel")
     watch.add_argument("--every", type=int, default=0)
@@ -482,7 +497,10 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--json-schema-title", default="PydanticforgeSchema")
     watch.set_defaults(_handler=_cmd_watch)
 
-    generate = subparsers.add_parser("generate", help="Generate Pydantic models from inferred schema.")
+    generate = subparsers.add_parser(
+        "generate",
+        help="Generate Pydantic models from inferred schema.",
+    )
     generate.add_argument(
         "--input",
         type=Path,
@@ -550,7 +568,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args._handler(args)
+    handler = args._handler
+    if not callable(handler):
+        raise TypeError("Invalid command handler")
+    typed_handler = handler
+    return cast(Callable[[argparse.Namespace], int], typed_handler)(args)
 
 
 if __name__ == "__main__":  # pragma: no cover

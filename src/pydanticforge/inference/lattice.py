@@ -5,8 +5,8 @@ from pydanticforge.inference.types import (
     ANY,
     FLOAT,
     INT,
-    ArrayType,
     AnyType,
+    ArrayType,
     FieldInfo,
     FloatType,
     IntType,
@@ -18,7 +18,11 @@ from pydanticforge.inference.types import (
 )
 
 
-def _merge_examples(left: tuple[str, ...], right: tuple[str, ...], limit: int = 3) -> tuple[str, ...]:
+def _merge_examples(
+    left: tuple[str, ...],
+    right: tuple[str, ...],
+    limit: int = 3,
+) -> tuple[str, ...]:
     merged = sorted(set(left) | set(right))
     return tuple(merged[:limit])
 
@@ -100,9 +104,7 @@ def join_types(left: TypeNode, right: TypeNode, *, strict_numbers: bool = False)
         return simplify_union([left, right], strict_numbers=strict_numbers)
 
     if isinstance(left, ArrayType) and isinstance(right, ArrayType):
-        return ArrayType(
-            join_types(left.item_type, right.item_type, strict_numbers=strict_numbers)
-        )
+        return ArrayType(join_types(left.item_type, right.item_type, strict_numbers=strict_numbers))
 
     if isinstance(left, ObjectType) and isinstance(right, ObjectType):
         return _join_object_fields(left, right, strict_numbers=strict_numbers)

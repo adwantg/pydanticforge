@@ -1,14 +1,14 @@
 # Author: gadwant
 from __future__ import annotations
 
+import importlib
 import json
+from collections.abc import Iterable
+from importlib.util import find_spec
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
-try:
-    import orjson
-except ImportError:  # pragma: no cover - optional dependency at runtime
-    orjson = None
+orjson: Any | None = importlib.import_module("orjson") if find_spec("orjson") is not None else None
 
 
 def _loads(raw: bytes | str) -> Any:

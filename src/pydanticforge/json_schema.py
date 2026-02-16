@@ -42,10 +42,7 @@ def _to_json_schema(node: TypeNode) -> dict[str, Any]:
     if isinstance(node, ArrayType):
         return {"type": "array", "items": _to_json_schema(node.item_type)}
     if isinstance(node, ObjectType):
-        properties = {
-            name: _to_json_schema(field.type_node)
-            for name, field in node.fields
-        }
+        properties = {name: _to_json_schema(field.type_node) for name, field in node.fields}
         required = [name for name, field in node.fields if field.required]
 
         schema: dict[str, Any] = {

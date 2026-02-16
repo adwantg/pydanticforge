@@ -8,7 +8,6 @@ from pydanticforge.inference.types import (
     FLOAT,
     INT,
     ArrayType,
-    AnyType,
     BoolType,
     DateTimeType,
     FloatType,
@@ -76,16 +75,14 @@ def _is_compatible(expected: TypeNode, observed: TypeNode) -> bool:
                 return False
         return True
 
-    if _is_same_scalar_family(expected, observed):
-        return True
-
-    return False
+    return bool(_is_same_scalar_family(expected, observed))
 
 
 def detect_drift(expected: TypeNode, observed: TypeNode, *, path: str = "$") -> list[DriftEvent]:
-    if isinstance(expected, UnionType):
-        if any(_is_compatible(option, observed) for option in expected.options):
-            return []
+    if isinstance(expected, UnionType) and any(
+        _is_compatible(option, observed) for option in expected.options
+    ):
+        return []
 
     if not _is_compatible(expected, observed):
         if isinstance(expected, ObjectType) and isinstance(observed, ObjectType):
@@ -112,7 +109,12 @@ def detect_drift(expected: TypeNode, observed: TypeNode, *, path: str = "$") -> 
     return []
 
 
-def _detect_object_drift(expected: ObjectType, observed: ObjectType, *, path: str) -> list[DriftEvent]:
+def _detect_object_drift(
+    expected: ObjectType,
+    observed: ObjectType,
+    *,
+    path: str,
+) -> list[DriftEvent]:
     drifts: list[DriftEvent] = []
     expected_fields = expected.as_mapping()
     observed_fields = observed.as_mapping()

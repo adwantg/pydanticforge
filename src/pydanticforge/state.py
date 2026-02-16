@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 from pydanticforge.inference.types import (
     ANY,
@@ -21,7 +22,7 @@ from pydanticforge.inference.types import (
 )
 
 
-def _type_to_data(node: TypeNode) -> dict:
+def _type_to_data(node: TypeNode) -> dict[str, Any]:
     if node == ANY:
         return {"kind": "any"}
     if node == NULL:
@@ -61,7 +62,7 @@ def _type_to_data(node: TypeNode) -> dict:
     raise TypeError(f"Unsupported type node: {type(node)}")
 
 
-def _type_from_data(data: dict) -> TypeNode:
+def _type_from_data(data: dict[str, Any]) -> TypeNode:
     kind = data["kind"]
 
     if kind == "any":
@@ -96,11 +97,11 @@ def _type_from_data(data: dict) -> TypeNode:
     raise ValueError(f"Unknown type kind: {kind}")
 
 
-def schema_state_payload(root: TypeNode) -> dict:
+def schema_state_payload(root: TypeNode) -> dict[str, Any]:
     return {"schema_version": 1, "root": _type_to_data(root)}
 
 
-def root_from_schema_state_payload(payload: dict) -> TypeNode:
+def root_from_schema_state_payload(payload: dict[str, Any]) -> TypeNode:
     version = int(payload.get("schema_version", 1))
     if version != 1:
         raise ValueError(f"Unsupported schema state version: {version}")

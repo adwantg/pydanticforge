@@ -200,10 +200,7 @@ def semantic_diff(old: ModelSchema, new: ModelSchema) -> list[DiffEntry]:
             if kind == "same":
                 continue
 
-            if kind == "widened":
-                severity = "non-breaking"
-            else:
-                severity = "breaking"
+            severity = "non-breaking" if kind == "widened" else "breaking"
 
             entries.append(
                 DiffEntry(

@@ -40,9 +40,7 @@ def test_semantic_diff_classifies_breaking_and_non_breaking(tmp_path: Path) -> N
     entries = diff_models(old_file, new_file)
 
     assert any(
-        entry.severity == "non-breaking"
-        and entry.field_name == "id"
-        and "widened" in entry.message
+        entry.severity == "non-breaking" and entry.field_name == "id" and "widened" in entry.message
         for entry in entries
     )
     assert any(

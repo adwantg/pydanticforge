@@ -141,7 +141,7 @@ def test_monitor_json_format_and_fail_on_any(tmp_path: Path, capsys: object) -> 
     state_file = tmp_path / "state.json"
     _run_with_stdin(
         ["generate", "--save-state", str(state_file)],
-        '{\"id\": 1, \"name\": \"a\"}\n',
+        '{"id": 1, "name": "a"}\n',
     )
     capsys.readouterr()
 
@@ -173,7 +173,7 @@ def test_status_json_snapshot(tmp_path: Path, capsys: object) -> None:
     state_file = tmp_path / "state.json"
     _run_with_stdin(
         ["generate", "--save-state", str(state_file)],
-        '{\"id\": 1}\n{\"id\": 2, \"name\": \"x\"}\n',
+        '{"id": 1}\n{"id": 2, "name": "x"}\n',
     )
     capsys.readouterr()
 

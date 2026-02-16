@@ -1,8 +1,8 @@
 # Author: gadwant
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -123,7 +123,7 @@ def type_name(node: TypeNode) -> str:
         field_names = ",".join(name for name, _ in node.fields)
         return f"object<{field_names}>"
     if isinstance(node, UnionType):
-        parts = sorted((type_name(option) for option in node.options))
+        parts = sorted(type_name(option) for option in node.options)
         return " | ".join(parts)
     raise TypeError(f"Unsupported TypeNode: {type(node)}")
 
